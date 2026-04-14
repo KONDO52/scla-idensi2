@@ -76,6 +76,68 @@ input:focus { border-color:#16A34A; background:#fff; }
 </style>
 </head>
 <body>
+<!-- Password Gate (2026-04-15 追加) -->
+<div id="__pwgate" style="position:fixed;inset:0;background:linear-gradient(135deg,#16A34A,#15803D);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif">
+  <div style="background:#fff;padding:32px 28px;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-width:360px;width:90%;text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">🔒</div>
+    <div style="font-size:20px;font-weight:700;color:#15803D;margin-bottom:4px">ずぼらでダイエット</div>
+    <div style="font-size:13px;color:#64748B;margin-bottom:20px">デモ機（チーム限定）</div>
+    <input id="__pwinput" type="password" placeholder="パスワード" style="width:100%;padding:12px;border:2px solid #E2E8F0;border-radius:8px;font-size:16px;box-sizing:border-box;margin-bottom:8px" autofocus />
+    <div id="__pwerror" style="color:#DC2626;font-size:12px;height:16px;margin-bottom:8px"></div>
+    <button id="__pwbtn" style="width:100%;padding:12px;background:#16A34A;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer">アクセス</button>
+    <div style="font-size:11px;color:#94A3B8;margin-top:16px;line-height:1.5">
+      このサイトはずぼらでダイエットのプロトタイプデモです。<br>
+      チーム関係者以外の閲覧はご遠慮ください。
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const PW_HASH = "536510d93c2fc33a4117fb0896c10ec7811130f062723c74761315c0c4180ff9";
+  const STORAGE_KEY = "__zuboran_auth_v1";
+  async function sha256(text) {
+    const buf = new TextEncoder().encode(text);
+    const hash = await crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,"0")).join("");
+  }
+  function unlock() {
+    const gate = document.getElementById("__pwgate");
+    if (gate) gate.style.display = "none";
+    document.body.style.overflow = "";
+  }
+  function lock() {
+    document.body.style.overflow = "hidden";
+  }
+  if (sessionStorage.getItem(STORAGE_KEY) === "ok" || localStorage.getItem(STORAGE_KEY) === "ok") {
+    unlock();
+    return;
+  }
+  lock();
+  function attach() {
+    const input = document.getElementById("__pwinput");
+    const btn = document.getElementById("__pwbtn");
+    const err = document.getElementById("__pwerror");
+    if (!input || !btn) { setTimeout(attach, 100); return; }
+    async function tryAuth() {
+      const h = await sha256(input.value);
+      if (h === PW_HASH) {
+        sessionStorage.setItem(STORAGE_KEY, "ok");
+        localStorage.setItem(STORAGE_KEY, "ok");
+        unlock();
+      } else {
+        err.textContent = "パスワードが違います";
+        input.value = "";
+        input.focus();
+      }
+    }
+    btn.addEventListener("click", tryAuth);
+    input.addEventListener("keydown", e => { if (e.key === "Enter") tryAuth(); });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", attach);
+  else attach();
+})();
+</script>
+
 <div id="wrapper">
   <div id="debug">S-000</div>
   <div id="history">遷移履歴</div>
