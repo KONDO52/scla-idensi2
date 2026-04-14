@@ -76,7 +76,6 @@ input:focus { border-color:#16A34A; background:#fff; }
 </style>
 </head>
 <body><!-- PW --><div id="__pwgate" style="position:fixed;inset:0;background:linear-gradient(135deg,#16A34A,#15803D);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif"><div style="background:#fff;padding:32px 28px;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-width:360px;width:90%;text-align:center"><div style="font-size:48px;margin-bottom:8px">🔒</div><div style="font-size:20px;font-weight:700;color:#15803D;margin-bottom:4px">ずぼらでダイエット</div><div style="font-size:13px;color:#64748B;margin-bottom:20px">デモ機（チーム限定）</div><input id="__pwinput" type="password" placeholder="パスワード" style="width:100%;padding:12px;border:2px solid #E2E8F0;border-radius:8px;font-size:16px;box-sizing:border-box;margin-bottom:8px" autofocus /><div id="__pwerror" style="color:#DC2626;font-size:12px;height:16px;margin-bottom:8px"></div><button id="__pwbtn" style="width:100%;padding:12px;background:#16A34A;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer">アクセス</button></div></div><script>(function(){const H="536510d93c2fc33a4117fb0896c10ec7811130f062723c74761315c0c4180ff9";const K="__zuboran_auth_v1";async function h(t){const b=new TextEncoder().encode(t);const x=await crypto.subtle.digest("SHA-256",b);return Array.from(new Uint8Array(x)).map(v=>v.toString(16).padStart(2,"0")).join("");}function u(){const g=document.getElementById("__pwgate");if(g)g.style.display="none";document.body.style.overflow="";}if(sessionStorage.getItem(K)==="ok"||localStorage.getItem(K)==="ok"){u();return;}document.body.style.overflow="hidden";function a(){const i=document.getElementById("__pwinput"),b=document.getElementById("__pwbtn"),e=document.getElementById("__pwerror");if(!i||!b){setTimeout(a,100);return;}async function z(){const v=await h(i.value);if(v===H){sessionStorage.setItem(K,"ok");localStorage.setItem(K,"ok");u();}else{e.textContent="パスワードが違います";i.value="";i.focus();}}b.addEventListener("click",z);i.addEventListener("keydown",ev=>{if(ev.key==="Enter")z();});}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",a);else a();})();</script>
-
 <div id="wrapper">
   <div id="debug">S-000</div>
   <div id="history">遷移履歴</div>
@@ -273,21 +272,49 @@ function getMealIdeal(mealType) {
 }
 
 // スコア計算（1食 or 1日）
+// 2026-04-15 改訂: 大幅逸脱(GAP≥50%)時はweightを非線形にブースト
 function calcScore(actual, ideal) {
   const w = getWeights(userProfile);
   let penalty = 0;
-  // カロリー: 超過時のみペナルティ
-  if (actual.kcal > ideal.kcal) penalty += ((actual.kcal - ideal.kcal) / ideal.kcal * 100) * w.kcal;
-  // P: 不足時のみペナルティ
-  if (actual.p < ideal.p) penalty += ((ideal.p - actual.p) / ideal.p * 100) * w.p;
-  // F: 超過時のみ
-  if (actual.f > ideal.f) penalty += ((actual.f - ideal.f) / ideal.f * 100) * w.f;
-  // 糖質: 超過時のみ
-  if (actual.sugar > ideal.sugar) penalty += ((actual.sugar - ideal.sugar) / ideal.sugar * 100) * w.sugar;
-  // 食物繊維: 不足時のみ
-  if (actual.fiber < ideal.fiber) penalty += ((ideal.fiber - actual.fiber) / ideal.fiber * 100) * w.fiber;
+  // 大幅逸脱ブースト係数（50%以上逸脱で各weightを強化）
+  const boost = (gap, threshold, mult) => gap >= threshold ? mult : 1.0;
+  // カロリー: 超過時のみ、GAP≥50%でweight×1.3
+  if (actual.kcal > ideal.kcal) {
+    const gap = (actual.kcal - ideal.kcal) / ideal.kcal * 100;
+    penalty += gap * w.kcal * boost(gap, 50, 1.3);
+  }
+  // P: 不足時のみ
+  if (actual.p < ideal.p) {
+    const gap = (ideal.p - actual.p) / ideal.p * 100;
+    penalty += gap * w.p;
+  }
+  // F: 超過時のみ、GAP≥50%でweight×1.5（脂質爆量ペナルティ強化）
+  if (actual.f > ideal.f) {
+    const gap = (actual.f - ideal.f) / ideal.f * 100;
+    penalty += gap * w.f * boost(gap, 50, 1.5);
+  }
+  // 糖質: 超過時のみ、GAP≥50%でweight×1.5
+  if (actual.sugar > ideal.sugar) {
+    const gap = (actual.sugar - ideal.sugar) / ideal.sugar * 100;
+    penalty += gap * w.sugar * boost(gap, 50, 1.5);
+  }
+  // 食物繊維: 不足時のみ、GAP≥50%でweight×2.0（繊維大幅不足ペナルティ強化）
+  if (actual.fiber < ideal.fiber) {
+    const gap = (ideal.fiber - actual.fiber) / ideal.fiber * 100;
+    penalty += gap * w.fiber * boost(gap, 50, 2.0);
+  }
   // 塩分はスコア対象外（2026-04-14削除）。コンシェルジュ層で水分提案等
   return Math.max(0, Math.round(100 - penalty));
+}
+
+// 大幅逸脱の検出（警告メッセージ生成用）
+function detectDeviations(actual, ideal) {
+  const warnings = [];
+  if (actual.kcal > ideal.kcal * 1.5) warnings.push({axis:'カロリー',type:'over',pct:Math.round((actual.kcal/ideal.kcal-1)*100),msg:`カロリーが理想の${Math.round(actual.kcal/ideal.kcal*100)}%。明日は軽めでリセットしよう`});
+  if (actual.f > ideal.f * 1.5) warnings.push({axis:'脂質',type:'over',pct:Math.round((actual.f/ideal.f-1)*100),msg:`脂質が理想の${Math.round(actual.f/ideal.f*100)}%。明日は揚げ物・バター控えめに`});
+  if (actual.sugar > ideal.sugar * 1.5) warnings.push({axis:'糖質',type:'over',pct:Math.round((actual.sugar/ideal.sugar-1)*100),msg:`糖質が理想の${Math.round(actual.sugar/ideal.sugar*100)}%。血糖値スパイクに注意`});
+  if (actual.fiber < ideal.fiber * 0.5) warnings.push({axis:'食物繊維',type:'under',pct:Math.round((1-actual.fiber/ideal.fiber)*100),msg:`食物繊維が半分以下。明日はサラダ or 野菜スープを1品追加しよう`});
+  return warnings;
 }
 
 // 「ー」判定: カロリーが理想の70%以下→「ー」（貯金）
@@ -959,9 +986,38 @@ screens['S-050s'] = () => {
       <div style="display:flex;justify-content:space-between;padding:3px 0"><span>食物繊維</span><span style="color:${fiberDiff>=0?'#16A34A':'#DC2626'};font-weight:700">${total.fiber.toFixed(1)}g / ${dayIdeal.fiber}g（${fiberDiff>=0?'+':''}${fiberDiff.toFixed(1)}g）</span></div>
     </div>
 
-    ${total.kcal > 0 ? aiMsg(dayScore >= 80 ? '素晴らしい1日！この調子を続ければ確実に痩せていくよ🎉' :
-      dayScore >= 60 ? 'まずまずの1日！Pをもう少し意識すると明日はもっと良くなるよ💪' :
-      'ちょっと超過気味の1日だったね。明日は軽めにすればリカバリーできるよ🌟') : ''}
+    ${total.kcal > 0 ? (() => {
+      // 大幅逸脱の検出
+      const warnings = detectDeviations(total, dayIdeal);
+      const hasMajorDeviation = warnings.length > 0;
+      // 閾値を厳格化: 全軸±30%以内かつ90点以上で「素晴らしい」
+      const allWithinRange = !hasMajorDeviation &&
+        total.kcal <= dayIdeal.kcal * 1.3 &&
+        total.f <= dayIdeal.f * 1.3 &&
+        total.sugar <= dayIdeal.sugar * 1.3 &&
+        total.fiber >= dayIdeal.fiber * 0.7;
+      let comment;
+      if (dayScore >= 90 && allWithinRange) {
+        comment = '素晴らしい1日！この調子を続ければ確実に痩せていくよ🎉';
+      } else if (dayScore >= 80 && !hasMajorDeviation) {
+        comment = 'いい調子！もう一歩でベストの日になるよ💪';
+      } else if (dayScore >= 80 && hasMajorDeviation) {
+        comment = `スコアは悪くないけど、${warnings[0].axis}が大きく逸脱してるよ。バランスを整えよう`;
+      } else if (dayScore >= 60) {
+        comment = 'まずまずの1日！Pをもう少し意識すると明日はもっと良くなるよ💪';
+      } else {
+        comment = 'ちょっと超過気味の1日だったね。明日は軽めにすればリカバリーできるよ🌟';
+      }
+      let html = aiMsg(comment);
+      // 大幅逸脱の警告表示
+      if (hasMajorDeviation) {
+        html += `<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:10px;margin:8px 0">
+          <div style="font-size:12px;font-weight:700;color:#B45309;margin-bottom:4px">⚠️ 大幅な逸脱が検出されました</div>
+          ${warnings.map(w => `<div style="font-size:11px;color:#334155;padding:3px 0">・${w.msg}</div>`).join('')}
+        </div>`;
+      }
+      return html;
+    })() : ''}
 
     <div style="background:#E0F2FE;border:1px solid #0891B2;border-radius:8px;padding:8px;text-align:center;font-size:11px;color:#0891B2;margin:8px 0">
       ※ この集計はプレビューです。AM3:00に確定します
