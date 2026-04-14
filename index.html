@@ -75,68 +75,7 @@ input:focus { border-color:#16A34A; background:#fff; }
 .popup-inner p { font-size:13px; color:#64748B; margin-bottom:16px; }
 </style>
 </head>
-<body>
-<!-- Password Gate (2026-04-15) -->
-<div id="__pwgate" style="position:fixed;inset:0;background:linear-gradient(135deg,#16A34A,#15803D);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif">
-  <div style="background:#fff;padding:32px 28px;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-width:360px;width:90%;text-align:center">
-    <div style="font-size:48px;margin-bottom:8px">🔒</div>
-    <div style="font-size:20px;font-weight:700;color:#15803D;margin-bottom:4px">ずぼらでダイエット</div>
-    <div style="font-size:13px;color:#64748B;margin-bottom:20px">デモ機（チーム限定）</div>
-    <input id="__pwinput" type="password" placeholder="パスワード" style="width:100%;padding:12px;border:2px solid #E2E8F0;border-radius:8px;font-size:16px;box-sizing:border-box;margin-bottom:8px" autofocus />
-    <div id="__pwerror" style="color:#DC2626;font-size:12px;height:16px;margin-bottom:8px"></div>
-    <button id="__pwbtn" style="width:100%;padding:12px;background:#16A34A;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer">アクセス</button>
-    <div style="font-size:11px;color:#94A3B8;margin-top:16px;line-height:1.5">
-      このサイトはずぼらでダイエットのプロトタイプデモです。<br>
-      チーム関係者以外の閲覧はご遠慮ください。
-    </div>
-  </div>
-</div>
-<script>
-(function(){
-  const PW_HASH = "536510d93c2fc33a4117fb0896c10ec7811130f062723c74761315c0c4180ff9";
-  const STORAGE_KEY = "__zuboran_auth_v1";
-  async function sha256(text) {
-    const buf = new TextEncoder().encode(text);
-    const hash = await crypto.subtle.digest("SHA-256", buf);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,"0")).join("");
-  }
-  function unlock() {
-    const gate = document.getElementById("__pwgate");
-    if (gate) gate.style.display = "none";
-    document.body.style.overflow = "";
-  }
-  function lock() {
-    document.body.style.overflow = "hidden";
-  }
-  if (sessionStorage.getItem(STORAGE_KEY) === "ok" || localStorage.getItem(STORAGE_KEY) === "ok") {
-    unlock();
-    return;
-  }
-  lock();
-  function attach() {
-    const input = document.getElementById("__pwinput");
-    const btn = document.getElementById("__pwbtn");
-    const err = document.getElementById("__pwerror");
-    if (!input || !btn) { setTimeout(attach, 100); return; }
-    async function tryAuth() {
-      const h = await sha256(input.value);
-      if (h === PW_HASH) {
-        sessionStorage.setItem(STORAGE_KEY, "ok");
-        localStorage.setItem(STORAGE_KEY, "ok");
-        unlock();
-      } else {
-        err.textContent = "パスワードが違います";
-        input.value = "";
-        input.focus();
-      }
-    }
-    btn.addEventListener("click", tryAuth);
-    input.addEventListener("keydown", e => { if (e.key === "Enter") tryAuth(); });
-  }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", attach);
-  else attach();
-})();
-</script>
+<body><!-- PW --><div id="__pwgate" style="position:fixed;inset:0;background:linear-gradient(135deg,#16A34A,#15803D);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif"><div style="background:#fff;padding:32px 28px;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-width:360px;width:90%;text-align:center"><div style="font-size:48px;margin-bottom:8px">🔒</div><div style="font-size:20px;font-weight:700;color:#15803D;margin-bottom:4px">ずぼらでダイエット</div><div style="font-size:13px;color:#64748B;margin-bottom:20px">デモ機（チーム限定）</div><input id="__pwinput" type="password" placeholder="パスワード" style="width:100%;padding:12px;border:2px solid #E2E8F0;border-radius:8px;font-size:16px;box-sizing:border-box;margin-bottom:8px" autofocus /><div id="__pwerror" style="color:#DC2626;font-size:12px;height:16px;margin-bottom:8px"></div><button id="__pwbtn" style="width:100%;padding:12px;background:#16A34A;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer">アクセス</button></div></div><script>(function(){const H="536510d93c2fc33a4117fb0896c10ec7811130f062723c74761315c0c4180ff9";const K="__zuboran_auth_v1";async function h(t){const b=new TextEncoder().encode(t);const x=await crypto.subtle.digest("SHA-256",b);return Array.from(new Uint8Array(x)).map(v=>v.toString(16).padStart(2,"0")).join("");}function u(){const g=document.getElementById("__pwgate");if(g)g.style.display="none";document.body.style.overflow="";}if(sessionStorage.getItem(K)==="ok"||localStorage.getItem(K)==="ok"){u();return;}document.body.style.overflow="hidden";function a(){const i=document.getElementById("__pwinput"),b=document.getElementById("__pwbtn"),e=document.getElementById("__pwerror");if(!i||!b){setTimeout(a,100);return;}async function z(){const v=await h(i.value);if(v===H){sessionStorage.setItem(K,"ok");localStorage.setItem(K,"ok");u();}else{e.textContent="パスワードが違います";i.value="";i.focus();}}b.addEventListener("click",z);i.addEventListener("keydown",ev=>{if(ev.key==="Enter")z();});}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",a);else a();})();</script>
 
 <div id="wrapper">
   <div id="debug">S-000</div>
@@ -638,13 +577,27 @@ function formatPastDate(daysAgo) {
 function saveMealWithCart(mealType, cart, source) {
   const nutrition = getCartNutrition(cart);
   nutrition._cart = {};
-  nutrition._source = source; // 'conveni' or 'gaishoku'
+  nutrition._source = source; // 'conveni' or 'gaishoku' or 'jisui'
   if (cart instanceof Map) {
     cart.forEach((qty, name) => { nutrition._cart[name] = qty; });
   } else {
     cart.forEach(name => { nutrition._cart[name] = 1; });
   }
   window._dayLog[mealType] = nutrition;
+  // 保存完了後、次の食事記録に備えてカート・ブランド・フィルタを初期化
+  resetMealSelectionState();
+}
+
+// 食事選択の一時状態を全リセット（コンビニ・外食・自炊のカート、ブランド、フィルタ）
+function resetMealSelectionState() {
+  window._cart = new Set();
+  window._gaishokuCart = new Map();
+  window._jisuiCart = new Map();
+  window._convBrand = null;
+  window._gaishokuBrand = null;
+  window._filter = null;
+  window._gaishokuTab = '全て';
+  window._jisuiTab = '全て';
 }
 
 // 食事修正: 保存されたカートを復元して選択画面に戻る
@@ -793,7 +746,7 @@ screens['S-050'] = () => {
     const data = log[m.key];
     if (!data) {
       // 未記録
-      return `<div class="meal-card" onclick="window._currentMealType='${m.key}';goTo('S-051')">
+      return `<div class="meal-card" onclick="window._currentMealType='${m.key}';resetMealSelectionState();goTo('S-051')">
         <div class="icon">${m.icon}</div>
         <div class="info"><div class="title">${m.title}</div><div class="desc">タップして記録する</div></div>
         <div class="score" style="color:#94A3B8">›</div>
