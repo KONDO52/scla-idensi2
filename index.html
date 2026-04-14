@@ -76,7 +76,7 @@ input:focus { border-color:#16A34A; background:#fff; }
 </style>
 </head>
 <body>
-<!-- Password Gate (2026-04-15 追加) -->
+<!-- Password Gate (2026-04-15) -->
 <div id="__pwgate" style="position:fixed;inset:0;background:linear-gradient(135deg,#16A34A,#15803D);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif">
   <div style="background:#fff;padding:32px 28px;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-width:360px;width:90%;text-align:center">
     <div style="font-size:48px;margin-bottom:8px">🔒</div>
@@ -1526,8 +1526,13 @@ screens['S-056'] = () => `
 // S-057: 記録完了（スコア計算エンジン連動）
 screens['S-057'] = () => {
   const log = window._dayLog || {};
-  const actual = log.lunch || getCartNutrition(window._cart || new Set());
-  const ideal = getMealIdeal('lunch');
+  const mealType = window._currentMealType || 'lunch';
+  const mealLabel = mealType==='breakfast'?'朝食':mealType==='dinner'?'夕食':'昼食';
+  // 該当食事枠の保存データ（なければカートから計算）
+  const actual = log[mealType] || getCartNutrition(
+    window._cart || window._gaishokuCart || window._jisuiCart || new Set()
+  );
+  const ideal = getMealIdeal(mealType);
   const dash = actual.kcal <= ideal.kcal * 0.7;
   const score = dash ? '-' : calcScore(actual, ideal);
   // PFC差分
@@ -1536,13 +1541,19 @@ screens['S-057'] = () => {
   const sugarDiff = actual.sugar - ideal.sugar;
   const fiberDiff = actual.fiber - ideal.fiber;
 
-  // 貯金フォローメッセージ
-  const hasSavings = log.breakfast === null || (log.breakfast && log.breakfast.kcal <= getMealIdeal('breakfast').kcal * 0.7);
+  // 貯金フォローメッセージ: 現在の食事より前の食事枠に貯金があるか
+  const orderPrev = { breakfast: [], lunch: ['breakfast'], dinner: ['breakfast','lunch'] };
+  const prevMeals = orderPrev[mealType] || [];
+  const hasSavings = prevMeals.some(m =>
+    log[m] && log[m].kcal <= getMealIdeal(m).kcal * 0.7
+  );
+  const savingsLabel = prevMeals.filter(m => log[m] && log[m].kcal <= getMealIdeal(m).kcal * 0.7)
+    .map(m => m==='breakfast'?'朝':'昼').join('・');
   let followMsg = '';
   if (dash) {
     followMsg = 'カロリー内だから「ー」表示だよ。1日集計でちゃんと評価されるから安心してね🌟';
   } else if (hasSavings && score < 70) {
-    followMsg = '1食で見ると少し多いけど、朝の分の貯金があるから、夜で調整すれば1日スコアは高得点狙えるよ！';
+    followMsg = `1食で見ると少し多いけど、${savingsLabel}の分の貯金があるから、残りの食事で調整すれば1日スコアは高得点狙えるよ！`;
   } else if (score >= 90) {
     followMsg = '素晴らしい選択！P確保＋カロリー管理ができてる💪';
   } else if (score >= 70) {
@@ -1555,7 +1566,7 @@ screens['S-057'] = () => {
   ${header('記録完了', '#2563EB', 'S-050')}
   <div class="content" style="text-align:center;padding-top:24px">
     <div style="width:80px;height:80px;background:${dash?'#E0F2FE':'#DCFCE7'};border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:${dash?'24':'36'}px;color:${dash?'#0891B2':'#16A34A'};font-weight:700">${dash?'ー':'✓'}</div>
-    <div style="font-size:20px;font-weight:700;margin-bottom:4px">食事を記録しました！</div>
+    <div style="font-size:20px;font-weight:700;margin-bottom:4px">${mealLabel}を記録しました！</div>
     ${dash ?
       `<div style="font-size:16px;color:#0891B2;font-weight:700;margin:8px 0">スコア: ー（軽食・貯金）</div>
        <div style="font-size:12px;color:#64748B">カロリーが理想の70%以下のため貯金扱いです。<br>AM3:00の1日集計で精算されます。</div>` :
