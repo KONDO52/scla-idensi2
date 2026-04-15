@@ -1635,10 +1635,29 @@ screens['S-057'] = () => {
 };
 
 // S-024: AIアドバイス（食事タイプに応じてリコメンド変化）
+// AIおすすめタップ用ヘルパー: 状態を確実にリセットしてから新カートを設定
+function applyAIRec(mealType, source, brand, items) {
+  resetMealSelectionState();
+  window._currentMealType = mealType;
+  if (source === 'conveni') {
+    window._convBrand = brand;
+    window._filter = { types: new Set(), budget: '制限なし' };
+    window._cart = new Set(items);
+    goTo('S-052c');
+  } else if (source === 'jisui') {
+    const m = new Map();
+    items.forEach(name => m.set(name, 1));
+    window._jisuiCart = m;
+    window._jisuiTab = '全て';
+    goTo('S-020a');
+  }
+}
+
 screens['S-024'] = () => {
   const log = window._dayLog || {};
-  const isDinner = log.dinner !== null && log.dinner !== undefined;
+  const isBreakfast = log.breakfast !== null && log.breakfast !== undefined;
   const isLunch = log.lunch !== null && log.lunch !== undefined;
+  const isDinner = log.dinner !== null && log.dinner !== undefined;
 
   // 夕食後 → リコメンドなし（1日の食事は終わり）
   if (isDinner) {
@@ -1659,44 +1678,51 @@ screens['S-024'] = () => {
     </div>`;
   }
 
-  // 昼食後 → 自炊 or コンビニのみリコメンド（外食は近くにないかもしれないので除外）
+  // 次のターゲット食事を決定（朝のみ→昼 / 朝+昼→夕 / 何も→昼）
+  const nextMeal = isLunch ? 'dinner' : 'lunch';
+  const nextLabel = nextMeal === 'dinner' ? '夕食' : '昼食';
+  const currentLabel = isLunch ? '昼食' : (isBreakfast ? '朝食' : '食事');
+
+  // 次食事に応じたレコメンドメニュー（JSONで定義）
+  const recs = nextMeal === 'dinner' ? [
+    {score:90, name:'鮭の味噌焼き定食＋おひたし', desc:'615kcal | P多め | 食物繊維◎', type:'jisui', label:'🍳 自炊', badgeStyle:'background:#FEF3C7;color:#92400E',
+     items:['鮭の味噌焼き定食','ほうれん草のおひたし','白米（少量）']},
+    {score:95, name:'鮭おにぎり＋サラダチキン＋豆腐サラダ＋味噌汁', desc:'416kcal | P高 | ¥674', type:'conveni', brand:'セブン', label:'🏪 セブン', badgeStyle:'background:#DCFCE7;color:#166534',
+     items:['鮭おにぎり','サラダチキン（プレーン）','豆腐サラダ','味噌汁（インスタント）']},
+    {score:88, name:'ファミチキ＋鮭おにぎり＋野菜サラダ＋味噌汁', desc:'517kcal | P高 | ¥634', type:'conveni', brand:'ファミマ', label:'🏪 ファミマ', badgeStyle:'background:#DBEAFE;color:#1E40AF',
+     items:['ファミチキ','鮭おにぎり','野菜サラダ','味噌汁（インスタント）']},
+    {score:94, name:'サラダチキン＋豆腐サラダ＋焼肉おにぎり', desc:'451kcal | P高 | ¥608', type:'conveni', brand:'ローソン', label:'🏪 ローソン', badgeStyle:'background:#FEE2E2;color:#991B1B',
+     items:['サラダチキン（プレーン）','豆腐サラダ','焼肉おにぎり']},
+  ] : [
+    // 昼食おすすめ（朝食のみ記録済みの場合）
+    {score:92, name:'鶏むね肉のグリル＋玄米＋野菜スープ', desc:'520kcal | P多め | 食物繊維◎', type:'jisui', label:'🍳 自炊', badgeStyle:'background:#FEF3C7;color:#92400E',
+     items:['鶏むね肉のグリル','玄米（小盛）','野菜スープ']},
+    {score:93, name:'サラダチキン＋おにぎり＋豆腐サラダ＋味噌汁', desc:'391kcal | P高 | ¥624', type:'conveni', brand:'セブン', label:'🏪 セブン', badgeStyle:'background:#DCFCE7;color:#166534',
+     items:['サラダチキン（プレーン）','鮭おにぎり','豆腐サラダ','味噌汁（インスタント）']},
+    {score:90, name:'ファミチキ＋サラダチキンサラダ＋おにぎり', desc:'458kcal | P高 | ¥580', type:'conveni', brand:'ファミマ', label:'🏪 ファミマ', badgeStyle:'background:#DBEAFE;color:#1E40AF',
+     items:['ファミチキ','サラダチキンサラダ','梅おにぎり']},
+  ];
+
   return `
   ${header('AIアドバイス', '#16A34A', 'S-050')}
   <div class="content">
     <div class="ai-msg" style="font-size:14px;line-height:1.6">
-      今日の昼食はお疲れさま！<br><br>
-      夕食では<strong>食物繊維</strong>を意識するとさらにスコアUPするよ。味噌汁や野菜の副菜を1品足してみて。
+      今日の${currentLabel}はお疲れさま！<br><br>
+      ${nextLabel}では<strong>食物繊維</strong>を意識するとさらにスコアUPするよ。味噌汁や野菜の副菜を1品足してみて。
     </div>
-    <div class="section-title">おすすめ夕食</div>
+    <div class="section-title">おすすめ${nextLabel}</div>
     <div style="font-size:11px;color:#64748B;margin-bottom:8px">タップするとメニューが選択された状態で開きます</div>
-    <div class="card" onclick="window._currentMealType='dinner';window._jisuiCart=new Map([['鮭の味噌焼き定食',1],['ほうれん草のおひたし',1],['白米（少量）',1]]);window._jisuiTab='全て';goTo('S-020a')" style="border-left:3px solid #F59E0B">
-      <div style="display:flex;align-items:center">
-        <span class="score-badge score-green" style="width:28px;height:24px;font-size:11px">90</span>
-        <div style="flex:1"><div style="font-weight:600">鮭の味噌焼き定食＋おひたし</div><div class="text-sm">615kcal | P多め | 食物繊維◎</div></div>
-        <span style="font-size:10px;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:4px">🍳 自炊</span>
-      </div>
-    </div>
-    <div class="card" onclick="window._currentMealType='dinner';window._convBrand='セブン';window._filter={types:new Set(),budget:'制限なし'};window._cart=new Set(['鮭おにぎり','サラダチキン（プレーン）','豆腐サラダ','味噌汁（インスタント）']);goTo('S-052c')" style="border-left:3px solid #16A34A">
-      <div style="display:flex;align-items:center">
-        <span class="score-badge score-green" style="width:28px;height:24px;font-size:11px">95</span>
-        <div style="flex:1"><div style="font-weight:600">鮭おにぎり＋サラダチキン＋豆腐サラダ＋味噌汁</div><div class="text-sm">416kcal | P高 | ¥674</div></div>
-        <span style="font-size:10px;background:#DCFCE7;color:#166534;padding:2px 6px;border-radius:4px">🏪 セブン</span>
-      </div>
-    </div>
-    <div class="card" onclick="window._currentMealType='dinner';window._convBrand='ファミマ';window._filter={types:new Set(),budget:'制限なし'};window._cart=new Set(['ファミチキ','鮭おにぎり','野菜サラダ','味噌汁（インスタント）']);goTo('S-052c')" style="border-left:3px solid #16A34A">
-      <div style="display:flex;align-items:center">
-        <span class="score-badge score-green" style="width:28px;height:24px;font-size:11px">88</span>
-        <div style="flex:1"><div style="font-weight:600">ファミチキ＋鮭おにぎり＋野菜サラダ＋味噌汁</div><div class="text-sm">517kcal | P高 | ¥634</div></div>
-        <span style="font-size:10px;background:#DBEAFE;color:#1E40AF;padding:2px 6px;border-radius:4px">🏪 ファミマ</span>
-      </div>
-    </div>
-    <div class="card" onclick="window._currentMealType='dinner';window._convBrand='ローソン';window._filter={types:new Set(),budget:'制限なし'};window._cart=new Set(['サラダチキン（プレーン）','豆腐サラダ','焼肉おにぎり']);goTo('S-052c')" style="border-left:3px solid #16A34A">
-      <div style="display:flex;align-items:center">
-        <span class="score-badge score-green" style="width:28px;height:24px;font-size:11px">94</span>
-        <div style="flex:1"><div style="font-weight:600">サラダチキン＋豆腐サラダ＋焼肉おにぎり</div><div class="text-sm">451kcal | P高 | ¥608</div></div>
-        <span style="font-size:10px;background:#FEE2E2;color:#991B1B;padding:2px 6px;border-radius:4px">🏪 ローソン</span>
-      </div>
-    </div>
+    ${recs.map(r => {
+      const itemsJson = JSON.stringify(r.items).replace(/"/g, '&quot;');
+      const brand = r.brand || '';
+      return `<div class="card" onclick="applyAIRec('${nextMeal}','${r.type}','${brand}',${itemsJson})" style="border-left:3px solid ${r.type==='jisui'?'#F59E0B':'#16A34A'}">
+        <div style="display:flex;align-items:center">
+          <span class="score-badge score-green" style="width:28px;height:24px;font-size:11px">${r.score}</span>
+          <div style="flex:1"><div style="font-weight:600">${r.name}</div><div class="text-sm">${r.desc}</div></div>
+          <span style="font-size:10px;${r.badgeStyle};padding:2px 6px;border-radius:4px">${r.label}</span>
+        </div>
+      </div>`;
+    }).join('')}
     <button class="btn btn-blue" onclick="goTo('S-024b')">もっと聞く</button>
     <button class="btn btn-outline" onclick="goTo('S-050')">ホームに戻る</button>
   </div>`;
