@@ -3458,7 +3458,7 @@ screens['S-005'] = () => {
     </div>
 
     ${aiMsg('体重は週1回更新するので、今の数字でOK！身長と年齢は最初の1回だけ。')}
-    <button class="btn btn-green" style="font-size:16px;padding:14px" onclick="(function(){var d=window._regData;d.age=parseInt(document.getElementById('regAge').value);d.height=parseFloat(document.getElementById('regH').value);d.weight=parseFloat(document.getElementById('regW').value);d.bmi=d.weight/Math.pow(d.height/100,2);goTo('S-008')})()">次へ →</button>
+    <button class="btn btn-green" style="font-size:16px;padding:14px" onclick="(function(){var d=window._regData;d.age=parseInt(document.getElementById('regAge').value);d.height=parseFloat(document.getElementById('regH').value);d.weight=parseFloat(document.getElementById('regW').value);d.bmi=d.weight/Math.pow(d.height/100,2);goTo(d.bmi>=18.5?'S-008':'S-008ng')})()">次へ →</button>
   </div>`;
 };
 
@@ -3467,11 +3467,10 @@ screens['S-008'] = () => {
   const d = window._regData;
   const bmi = d.bmi ? d.bmi.toFixed(1) : '—';
   const bmiNum = parseFloat(bmi);
-  const category = bmiNum < 18.5 ? '低体重' : bmiNum < 25 ? '標準' : bmiNum < 30 ? '軽度肥満' : '肥満';
-  const color = bmiNum < 18.5 ? '#2563EB' : bmiNum < 25 ? '#16A34A' : bmiNum < 30 ? '#FF6B1A' : '#DC2626';
-  const isEligible = bmiNum >= 18.5;
+  const category = bmiNum < 25 ? '標準' : bmiNum < 30 ? '軽度肥満' : '肥満';
+  const color = bmiNum < 25 ? '#16A34A' : bmiNum < 30 ? '#FF6B1A' : '#DC2626';
   return `
-  ${header('BMI判定', '#16A34A', 'S-005')}
+  ${header('BMI判定 ✅', '#16A34A', 'S-005')}
   <div class="content" style="text-align:center;padding-top:16px">
     <div style="font-size:14px;font-weight:700;margin-bottom:8px">あなたのBMI</div>
     <div style="font-size:48px;font-weight:700;color:${color};font-family:Georgia;margin-bottom:4px">${bmi}</div>
@@ -3485,19 +3484,41 @@ screens['S-008'] = () => {
     <div style="display:flex;justify-content:space-between;font-size:9px;color:#94A3B8;margin-bottom:16px">
       <span>痩せ</span><span>標準</span><span>肥満</span><span>高度肥満</span>
     </div>
-    ${isEligible ?
-      `<div style="background:#DCFCE7;border-radius:10px;padding:12px;margin-bottom:12px">
-        <div style="font-weight:700;color:#16A34A">✅ ダイエット対象です</div>
-        <div style="font-size:12px;color:#64748B;margin-top:4px">健康的な減量をサポートします</div>
-      </div>
-      ${aiMsg('ずぼらでダイエットなら、無理なく健康的に標準体重を目指せますよ！一緒に頑張りましょう💪')}
-      <button class="btn btn-green" onclick="goTo('S-011')">次へ →</button>` :
-      `<div style="background:#FEE2E2;border-radius:10px;padding:12px;margin-bottom:12px">
-        <div style="font-weight:700;color:#DC2626">ご利用いただけません</div>
-      </div>
-      ${aiMsg('BMIが18.5未満なので、これ以上のダイエットは不健康になるリスクがあります。今の美しさをキープする目標にしましょう！')}
-      <button class="btn btn-green" onclick="goTo('S-002')">了解しました</button>`
-    }
+    <div style="background:#DCFCE7;border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-weight:700;color:#16A34A">✅ ダイエット対象です</div>
+      <div style="font-size:12px;color:#64748B;margin-top:4px">健康的な減量をサポートします</div>
+    </div>
+    ${aiMsg('ずぼらでダイエットなら、無理なく健康的に標準体重を目指せますよ！一緒に頑張りましょう💪')}
+    <button class="btn btn-green" onclick="goTo('S-011')">次へ →</button>
+  </div>`;
+};
+
+// S-008ng: BMI判定 NG（18.5未満→対象外）
+screens['S-008ng'] = () => {
+  const d = window._regData;
+  const bmi = d.bmi ? d.bmi.toFixed(1) : '—';
+  return `
+  ${header('BMI判定 ⚠️', '#DC2626', 'S-005')}
+  <div class="content" style="text-align:center;padding-top:16px">
+    <div style="font-size:14px;font-weight:700;margin-bottom:8px">あなたのBMI</div>
+    <div style="font-size:48px;font-weight:700;color:#2563EB;font-family:Georgia;margin-bottom:4px">${bmi}</div>
+    <div style="font-size:13px;color:#2563EB;font-weight:700;margin-bottom:16px">低体重</div>
+    <div style="display:flex;background:#F1F5F9;border-radius:8px;height:12px;margin-bottom:16px;position:relative;overflow:hidden">
+      <div style="flex:1;background:#2563EB"></div>
+      <div style="flex:2;background:#F1F5F9"></div>
+      <div style="flex:2;background:#F1F5F9"></div>
+      <div style="flex:1;background:#F1F5F9"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:#94A3B8;margin-bottom:16px">
+      <span>痩せ</span><span>標準</span><span>肥満</span><span>高度肥満</span>
+    </div>
+    <div style="background:#FEE2E2;border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-weight:700;color:#DC2626">ご利用いただけません</div>
+      <div style="font-size:12px;color:#64748B;margin-top:4px">BMI 18.5未満のためダイエット非対象</div>
+    </div>
+    ${aiMsg('BMIが18.5未満なので、これ以上のダイエットは不健康になるリスクがあります。今の美しさをキープする目標にしましょう！')}
+    <button class="btn btn-outline" onclick="goTo('S-005')">← 体重を入力し直す</button>
+    <button class="btn btn-green" onclick="goTo('S-002')">了解しました</button>
   </div>`;
 };
 
