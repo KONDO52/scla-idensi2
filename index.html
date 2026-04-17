@@ -3924,7 +3924,7 @@ screens['S-018'] = () => `
 
     <button class="btn btn-purple" style="font-size:16px;padding:14px" onclick="window._regData.isAigeno=true;goTo('S-006i')">🧬 AIGENOを詳しく見る →</button>
     <div style="text-align:center;margin-top:8px">
-      <span style="font-size:12px;color:#94A3B8;cursor:pointer;padding:8px" onclick="goTo('S-020')">スキップしてアンケートへ →</span>
+      <span style="font-size:12px;color:#94A3B8;cursor:pointer;padding:8px" onclick="goTo('S-014')">スキップしてアンケートへ →</span>
     </div>
   </div>`;
 
@@ -4072,7 +4072,7 @@ screens['S-039'] = () => {
 };
 
 screens['S-014'] = () => `
-  ${header('食の嗜好設定', '#16A34A', 'S-006i')}
+  ${header('食の嗜好設定', '#16A34A', 'S-018')}
   <div class="content">
     <div class="section-title">嫌いな食べ物（キーワード）</div>
     <input type="text" placeholder="例: レバー、パクチー、ピーマン..." style="margin-bottom:4px">
@@ -4081,7 +4081,7 @@ screens['S-014'] = () => `
     <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">
       ${['甘いもの','揚げ物','パン','麺類','お酒','なし'].map((t,i) => `<span class="chip ${i===0?'active':''}">${t}</span>`).join('')}
     </div>
-    <button class="btn btn-green" onclick="goTo('S-018')">次へ →</button>
+    <button class="btn btn-green" onclick="goTo('S-020')">アンケートへ進む →</button>
   </div>`;
 
 // 旧S-018 / 旧S-020 は新定義が上にあるため削除済み
