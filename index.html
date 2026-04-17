@@ -3751,40 +3751,41 @@ screens['S-013w'] = () => `
 
     <div style="display:flex;gap:8px;margin-bottom:8px">
       <button class="btn btn-green" style="flex:1;font-size:16px;padding:16px" onclick="window._wagamamaEnabled=true;goTo('S-013w2')">OK！🔥</button>
-      <button class="btn btn-outline" style="flex:1;font-size:16px;padding:16px" onclick="window._wagamamaEnabled=false;goTo('S-013w2')">NGで</button>
+      <button class="btn btn-outline" style="flex:1;font-size:16px;padding:16px" onclick="window._wagamamaEnabled=false;goTo('S-013w2ng')">NGで</button>
     </div>
     <div style="font-size:11px;color:#94A3B8;text-align:center">いつでも設定から変更できます</div>
   </div>`;
 
-// S-013w2: バッファ選択結果
-screens['S-013w2'] = () => {
-  const ok = window._wagamamaEnabled;
-  return `
-  ${header(ok ? 'わがままモード有効！' : 'ストイックモード！', '#16A34A', 'S-013w')}
+screens['S-013w2'] = () => `
+  ${header('わがままモード有効！ 🔥', '#16A34A', 'S-013w')}
   <div class="content" style="text-align:center;padding-top:24px">
-    ${ok ? `
-      <div style="font-size:48px;margin-bottom:8px">🔥</div>
-      <div style="font-size:18px;font-weight:700;margin-bottom:8px">わがままモード有効！</div>
-      <div style="background:#DCFCE7;border:1px solid #16A34A;border-radius:10px;padding:12px;margin-bottom:12px">
-        <div style="font-size:13px;color:#16A34A;font-weight:700">目標期間: 4ヶ月（+1ヶ月バッファ）</div>
-        <div style="font-size:12px;color:#64748B;margin-top:4px">毎日の目標カロリーは変わりません</div>
-        <div style="font-size:12px;color:#64748B;margin-top:2px">月3回、好きなものを食べていい日があります</div>
-      </div>
-      ${aiMsg('ありがとう！バッファがあれば無理なく続けられるよ。一緒に頑張ろう💪🔥')}
-    ` : `
-      <div style="font-size:48px;margin-bottom:8px">💪</div>
-      <div style="font-size:18px;font-weight:700;margin-bottom:8px">ストイックモード！</div>
-      <div style="background:#DBEAFE;border:1px solid #2563EB;border-radius:10px;padding:12px;margin-bottom:12px">
-        <div style="font-size:13px;color:#2563EB;font-weight:700">目標期間: 3ヶ月（変更なし）</div>
-        <div style="font-size:12px;color:#64748B;margin-top:4px">わがままモードは使えません</div>
-        <div style="font-size:12px;color:#64748B;margin-top:2px">最短で目標達成を目指します</div>
-      </div>
-      ${aiMsg('了解！ストイックに頑張るんだね。いつでも設定から変更できるから安心してね💪')}
-    `}
+    <div style="font-size:48px;margin-bottom:8px">🔥</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px">わがままモード有効！</div>
+    <div style="background:#DCFCE7;border:1px solid #16A34A;border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-size:13px;color:#16A34A;font-weight:700">目標期間: 4ヶ月（+1ヶ月バッファ）</div>
+      <div style="font-size:12px;color:#64748B;margin-top:4px">毎日の目標カロリーは変わりません</div>
+      <div style="font-size:12px;color:#64748B;margin-top:2px">月3回、好きなものを食べていい日があります</div>
+    </div>
+    ${aiMsg('ありがとう！バッファがあれば無理なく続けられるよ。一緒に頑張ろう💪🔥')}
     <button class="btn btn-green" style="font-size:16px;padding:14px" onclick="goTo('S-013x')">次へ →</button>
     <button class="btn btn-outline" style="font-size:14px;padding:12px;margin-top:8px" onclick="goTo('S-013w')">← 選択をやり直す</button>
   </div>`;
-};
+
+// S-013w2ng: ストイックモード（NG選択時の結果画面）
+screens['S-013w2ng'] = () => `
+  ${header('ストイックモード！ 💪', '#2563EB', 'S-013w')}
+  <div class="content" style="text-align:center;padding-top:24px">
+    <div style="font-size:48px;margin-bottom:8px">💪</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px">ストイックモード！</div>
+    <div style="background:#DBEAFE;border:1px solid #2563EB;border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-size:13px;color:#2563EB;font-weight:700">目標期間: 3ヶ月（変更なし）</div>
+      <div style="font-size:12px;color:#64748B;margin-top:4px">わがままモードは使えません</div>
+      <div style="font-size:12px;color:#64748B;margin-top:2px">最短で目標達成を目指します</div>
+    </div>
+    ${aiMsg('了解！ストイックに頑張るんだね。いつでも設定から変更できるから安心してね💪')}
+    <button class="btn btn-green" style="font-size:16px;padding:14px" onclick="goTo('S-013x')">次へ →</button>
+    <button class="btn btn-outline" style="font-size:14px;padding:12px;margin-top:8px" onclick="goTo('S-013w')">← 選択をやり直す</button>
+  </div>`;
 
 // S-013x: AIGENO会員 / 非AIGENO会員 分岐選択
 screens['S-013x'] = () => `
